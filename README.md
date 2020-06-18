@@ -11,10 +11,10 @@ So I had to use:
 ```<code>```
 Then I had to amend the bash profile on my mac.  First I opened the bash_profile in my 
 usual code editor by running the below in my terminal:  
-```code ~/.bash_profile```
+```code \~/.bash_profile```
 Then below my other exports (I had a couple for Python), I added the following two lines:  
 ```
-export PATH=~/Library/Android/sdk/tools:$PATH
+export PATH=~/Library/Android/sdk/tools:$PATH  
 export PATH=~/Library/Android/sdk/platform-tools:$PATH
 ```
 
