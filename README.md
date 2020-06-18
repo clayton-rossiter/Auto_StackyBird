@@ -6,7 +6,7 @@ Python program to automate the mobile app of Stacky Bird
 ### Mac OS X
 This was an absolute nightmare to get working on my oldschool Macbook Pro  
 The "plug and play" method below didn't work initially for me:  
-```
+```  
 brew cask install android-platform-tools  
 ```  
 So I had to use:
@@ -16,7 +16,7 @@ So I had to use:
 Then I had to amend the bash profile on my mac.  First I opened the bash_profile in my  
 usual code editor by running the below in my terminal:  
 ```
-~/.bash_profile  
+code ~/.bash_profile  
 ```  
 Then below my other exports (I had a couple for Python), I added the following two lines:  
 ```  
@@ -44,5 +44,6 @@ There are a number of ways to get this working on Windows, Mac OS X and Linux.  
 - GenyMotion
 - Vysor
 - Apowermirror  
+  
 I could only get the last one working easily.  I had installation issues with scrcpy (again, oldschool Macbook Pro and compatiblity issues...) and I read a whole list of adb client/server incompatibilities with GenyMotion.  Again, I also had issues with Vysor by being stuck at a "Waiting for decoder" issue so I abandoned that ship as well.  
 
