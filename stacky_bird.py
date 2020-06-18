@@ -1,5 +1,6 @@
 from ppadb.client import Client
 import time
+import mss
 
 class StackyBird():
     def __init__(self, host='127.0.0.1', port=5037):
@@ -11,6 +12,8 @@ class StackyBird():
         self.holdy = 1000
         self.revivex = 565
         self.revivey = 1900
+        self.nextLevelX = 545
+        self.nextLevelY = 1945
         self.stack = 125    # time in ms to add one stack
         self.connect()
 
@@ -21,35 +24,38 @@ class StackyBird():
         except:
             print("Cannot connect to phone!")
 
-    def start(self):
-        command = 'input tap {} {}'.format(self.startx, self.starty)
-        print(command)
-        self.device.shell(command)
-
-
-    def revive(self):
-        command = 'input tap {} {}'.format(self.revivex, self.revivey)
-        print(command)
-        self.device.shell(command)
-        time.sleep(3)
-        self.start()
-
     def tap(self, x, y):
         command = 'input tap {} {}'.format(x,y)
-        print(command)
         self.device.shell(command)
-        print("tapped")
 
     def hold(self, duration):
         command = 'input swipe {} {} {} {} {}'.format(self.holdx,self.holdy,self.holdx,self.holdy,duration)
         self.device.shell(command)
         print('Screen held for {} ms'.format(duration))
 
+    def start(self):
+        time.sleep(3)
+        self.tap(self.startx, self.starty)
+        print('Game started!')
+
+    def revive(self):
+        self.tap(self.revivex, self.revivey)
+        print('Tapped to restart')
+        self.start()
+    
+    def next_level(self):
+        self.tap(self.nextLevelX, self.nextLevelY)
+        print('Level complete!')
+        self.start()
+
+    def screenshot(self):
+        self.screenshot = mss()
+
+
 if __name__ == '__main__':
-    samsung = StackyBird()
-    print (samsung.device)
-    samsung.revive()
-    samsung.hold(125)
-    samsung.hold(250)
-    samsung.hold(375)
+    game = StackyBird()
+    game.revive()
+    game.hold(125)
+    game.hold(250)
+    game.hold(375)
         
