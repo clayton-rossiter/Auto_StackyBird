@@ -5,6 +5,8 @@ import os
 import numpy as np
 from PIL import Image
 import cv2
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 class StackyBird():
     def __init__(self, host='127.0.0.1', port=5037):
@@ -27,10 +29,7 @@ class StackyBird():
         self.boundaryBirdUpper = [255,255,160]
         self.boundaryBlockLower = []    # updates with start()
         self.boundaryBlockUpper = []    # updates with start()
-        self.boundaries = (
-            (self.boundaryBirdLower, self.boundaryBirdUpper),
-            (self.boundaryBlockLower, self.boundaryBlockUpper)
-            )
+        self.types = ['bird', 'blocks']
         # below parameters were tested on a 1280x800 monitor
         # relative sizes are later calculated in get_resolution()
         self.referenceGroundLevel= 350/800
@@ -41,7 +40,7 @@ class StackyBird():
         self.referenceScreenTop = 145/800       # distance in px from 0,0 to playable screen top
         # initialise functions
         self.get_resolution()
-        # self.connect()
+        self.connect()
 
         def initialise_grid():
             # create zeros grid of values for colours
@@ -108,6 +107,10 @@ class StackyBird():
                 upper[2] = b
         self.boundaryBlockLower = lower
         self.boundaryBlockUpper = upper
+        self.boundaries = (
+            (self.boundaryBirdLower, self.boundaryBirdUpper),
+            (self.boundaryBlockLower, self.boundaryBlockUpper)
+            )
         # press begin
         self.tap(self.startx, self.starty)
         print('Game started!')
@@ -129,27 +132,52 @@ class StackyBird():
             monitor = {"top": self.screenTop, "left": 0, "width": self.screenWidth, "height": self.screenHeight}
             self.rgb = np.array(pil_frombytes(sct.grab(monitor)))
 
-    def update(self):
-        complete = False
-        while not complete == True:
-            current_time = time.time()
-            self.check_grid()
-        #     time.sleep(time.time()-current_time)
 
+    def update(self):
         def check_grid(self):
-            # 1 block per screen width for bird block
-            # 7 blocks per screen width
+            # 7 blocks per screen width (8 including bird column)
             # 20 blocks per screen height
             # only need to consider blocks right of bird (60px/1280px left padding)
             # monitor centre point of grid x-axis, bottom 10% on y-xaxis
             self.screenshot()
+            # reset grid coordinates and positions will have moved
+            self.grid = np.zeros([20,8])
+            populated=[]
+            for t, (lower,upper) in zip(self.types, self.boundaries):
+                lower = np.array(lower, dtype = "uint8")
+                upper = np.array(upper, dtype = "uint8")
+                print(lower,upper)
+                # compare image against boundary limits
+                mask = cv2.inRange(self.rgb, lower, upper)
+                output = cv2.bitwise_and(self.rgb, self.rgb, mask=mask)
+                # populate grid with outcome
+                for row in range(20):
+                    for col in range(8):
+                        #  only check rows and cols not populated
+                        coord = '{},{}'.format(row,col)
+                        pixelRow = int(row*self.blockSize + round(self.blockSize*0.5))
+                        pixelCol = int(60 + col*self.blockSize + round(self.blockSize*0.5))
+                        # print(output[pixelRow][pixelCol])
+                        val = rgb2single(output[pixelRow][pixelCol])
+                        if val > 50:
+                            if not coord in populated:
+                                print(t,val)
+                                if t == 'bird':
+                                    self.grid[row,col] = 200
+                                    populated.append(coord)
+                                    # keep track of the top stacked bird
+                                    # if row > self.birdTop:
+                                    #     self.birdTop = row
+                                elif t == 'blocks':
+                                    self.grid[row,col] = 100
+                                    populated.append(coord)
 
-        def check_bird_column(self):
-            # bird's R and G values are both above 250, use that as verification for column
-            # using 40% of width as dead centre is bird's nose
-            self.coordX = self.paddingLeft + self.blockSize*0.4
-            coordY = self.blockSize/2
-            # for i in range(len(self.gridBird[0:])):
+
+        complete = False
+        check_grid(self)
+        #     time.sleep(time.time()-current_time)
+
+        
             
 
 # function to convert mss screenshot in BGRA to standard RGB
@@ -163,3 +191,5 @@ def rgb2single(rgb):
 
 if __name__ == '__main__':
     game = StackyBird()
+    game.start()
+    game.update()
