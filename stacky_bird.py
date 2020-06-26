@@ -29,10 +29,12 @@ class StackyBird():
         self.boundaryBirdUpper = [255,255,160]
         self.boundaryBlockLower = []    # updates with start()
         self.boundaryBlockUpper = []    # updates with start()
-        self.types = ['bird', 'blocks']
+        self.boundaryFinishLower = [109,78,60]
+        self.boundaryFinishUpper = [132,101,84]
+        self.types = ['bird','blocks','hut']
         # below parameters were tested on a 1280x800 monitor
         # relative sizes are later calculated in get_resolution()
-        self.referenceGroundLevel= 350/800
+        self.referenceGroundLevel= 360/800
         self.referenceBlockSize = 25/800
         self.referencePaddingLeft = 60/1280     # padding of bird from left screen
         self.referenceScreenWidth = 260/1280    # width of playable device screen
@@ -89,7 +91,7 @@ class StackyBird():
         upper=[0,0,0]
         # check from ground level datum to two blocks below datum
         for i in range(int(self.groundLevel), int(self.groundLevel + 2*self.blockSize)):
-            r,g,b = self.rgb[i,50]
+            r,g,b = self.rgb[i,10]
             # check red
             if r < lower[0]:
                 lower[0] = r
@@ -109,13 +111,15 @@ class StackyBird():
         self.boundaryBlockUpper = upper
         self.boundaries = (
             (self.boundaryBirdLower, self.boundaryBirdUpper),
-            (self.boundaryBlockLower, self.boundaryBlockUpper)
+            (self.boundaryBlockLower, self.boundaryBlockUpper),
+            (self.boundaryFinishLower, self.boundaryFinishUpper)
             )
         # press begin
         self.tap(self.startx, self.starty)
         print('Game started!')
+        time.sleep(1.5)
 
-    def revive(self):
+    def restart(self):
         self.tap(self.revivex, self.revivey)
         print('Tapped to restart')
         self.start()
@@ -140,13 +144,14 @@ class StackyBird():
             # only need to consider blocks right of bird (60px/1280px left padding)
             # monitor centre point of grid x-axis, bottom 10% on y-xaxis
             self.screenshot()
+            # set bird height to row 21 - not feasible value so used for if no bird detected
+            self.birdTop = 21
             # reset grid coordinates and positions will have moved
             self.grid = np.zeros([20,8])
             populated=[]
             for t, (lower,upper) in zip(self.types, self.boundaries):
                 lower = np.array(lower, dtype = "uint8")
                 upper = np.array(upper, dtype = "uint8")
-                print(lower,upper)
                 # compare image against boundary limits
                 mask = cv2.inRange(self.rgb, lower, upper)
                 output = cv2.bitwise_and(self.rgb, self.rgb, mask=mask)
@@ -157,25 +162,46 @@ class StackyBird():
                         coord = '{},{}'.format(row,col)
                         pixelRow = int(row*self.blockSize + round(self.blockSize*0.5))
                         pixelCol = int(60 + col*self.blockSize + round(self.blockSize*0.5))
-                        # print(output[pixelRow][pixelCol])
                         val = rgb2single(output[pixelRow][pixelCol])
                         if val > 50:
                             if not coord in populated:
-                                print(t,val)
                                 if t == 'bird':
                                     self.grid[row,col] = 200
                                     populated.append(coord)
                                     # keep track of the top stacked bird
-                                    # if row > self.birdTop:
-                                    #     self.birdTop = row
+                                    if row < self.birdTop:
+                                        self.birdTop = row
                                 elif t == 'blocks':
                                     self.grid[row,col] = 100
                                     populated.append(coord)
+                                elif t == 'hut':
+                                    self.grid[row,col] = 69
+                                    populated.append(coord)
+        
+        def check_stack(self):
+            # must have run check_grid() before running check_stack()
+            # first check column of current bird row
+            for block in self.grid[self.birdTop,:]:
+                if block == 100:
+                    # there's a block in this column so need to tap
+                    return True
+        
+        def check_complete(self):
+            # check specific blocks for the brown hut at the end
+            # run before deciding whether to tap the screen in check_stack()
+            if self.grid[12,5] == 69:
+                return True
+            else:
+                return False
 
-
+        # run loop to capture grid, detect bird height
         complete = False
-        check_grid(self)
-        #     time.sleep(time.time()-current_time)
+        while complete == False:
+            check_grid(self)
+            complete = check_complete(self)
+            if check_stack(self) ==True:
+                self.tap(self.startx, self.starty)
+        
 
         
             
